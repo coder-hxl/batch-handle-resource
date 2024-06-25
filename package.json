@@ -1,0 +1,24 @@
+{
+  "name": "batch-handle-resource",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "CoderHXL",
+  "license": "MIT",
+  "description": "",
+  "dependencies": {
+    "batch-handle-resource": "link:",
+    "sharp": "^0.33.4",
+    "x-crawl": "^10.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.8",
+    "tsx": "^4.15.7",
+    "typescript": "^5.5.2"
+  }
+}
