@@ -2,5 +2,5 @@
 
 用于批量处理资源。
 
-- transformImage 图片转换等操作
-- replaceFileContent 文件内容
+- transformImage 批量图片转换
+- replaceFileContent 批量文件替换内容

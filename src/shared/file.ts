@@ -8,15 +8,15 @@ export function getFilePath(
   const transformToPaths = dirs.reduce((prev, v) => {
     if (v.isDirectory()) return prev
 
-    let path = `${v.parentPath}/${v.name}`
+    let filePath = `${v.parentPath}/${v.name}`
 
-    if (path.includes('\\')) {
-      path = `${path.replaceAll('\\', '/')}`
+    if (filePath.includes('\\')) {
+      filePath = filePath.replaceAll('\\', '/')
     }
 
-    if (filter && !filter(path)) return prev
+    if (filter && !filter(filePath)) return prev
 
-    prev.push(path)
+    prev.push(filePath)
 
     return prev
   }, [] as string[])

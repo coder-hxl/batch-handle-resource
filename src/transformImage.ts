@@ -1,6 +1,11 @@
 import fs from 'node:fs'
 
-import { getFilePath, isUndefined, getAllDirFileContent } from './shared'
+import {
+  getFilePath,
+  isUndefined,
+  getAllDirFileContent,
+  LogFileGenerate
+} from './shared'
 
 export interface Rule<R = 'png' | 'jpg', F = 'webp' | 'svg'> {
   name: R
@@ -14,53 +19,65 @@ export interface Rule<R = 'png' | 'jpg', F = 'webp' | 'svg'> {
       entryPath: string
       outputPath: string
       size: number
-    }) => Promise<void>
+    }) => Promise<any>
   }[]
 }
 
 export interface TransformImage<R = 'png' | 'jpg', F = 'webp' | 'svg'> {
-  entry: {
-    imageDir: string
-    contentDir?: string
-  }
-
-  outputRootDir: string
+  entry: string
+  output: string
 
   rules: Rule<R, F>[]
 
+  useFile?: {
+    dir: string
+    imageInFileAlias?: Record<any, any>
+  }
+
   mkdir?: boolean
+  logFileGeneratePath?: string
+  itemLog?: boolean
 }
+
+const logFileGenerate = new LogFileGenerate('图片优化对比', '# 图片优化对比', [
+  '次数',
+  '原',
+  '新',
+  '原大小',
+  '新大小'
+])
 
 async function handleImage(
   imagePaths: string[],
-  {
-    outputRootDir,
-    rules,
-    mkdir
-  }: {
+  options: {
+    entryRootDir: string
     outputRootDir: string
     rules: Rule[]
     mkdir?: boolean
+    itemLog?: boolean
   }
 ) {
+  const { entryRootDir, outputRootDir, rules, mkdir, itemLog } = options
+
   const pathInfoList: { entryPath: string; outputPath: string }[] = []
   const queuePendingList: Promise<any>[] = []
 
-  for (const path of imagePaths) {
-    console.log(`正在处理: ${path}`)
+  let i = 0
+  for (const entryPath of imagePaths) {
+    if (itemLog) console.log(`正在处理: ${entryPath}`)
 
-    const outPathFragment = path
-      .replace('D:/CoderHXL/spyx-next-web/public', outputRootDir)
+    const outDirPathFragment = entryPath
+      .replace(entryRootDir, outputRootDir)
       .split('/')
-    const outDir = outPathFragment
-      .slice(0, outPathFragment.length - 1)
+    const outDir = outDirPathFragment
+      .slice(0, outDirPathFragment.length - 1)
       .join('/')
 
     if (mkdir) fs.mkdirSync(outDir, { recursive: true })
 
-    const pending = fs.promises.stat(path).then(async (res) => {
+    const pending = fs.promises.stat(entryPath).then(async (res) => {
       const size = res.size / 1000
-      const rule = rules.find((v) => path.endsWith(v.name))
+      const rule = rules.find((v) => entryPath.endsWith(v.name))
       if (!rule) return
 
       const { name: rawName, format } = rule
@@ -73,20 +90,31 @@ async function handleImage(
           (isUndefined(max) || (!isUndefined(max) && size < max)) &&
           (isUndefined(min) || (!isUndefined(min) && size > min))
         ) {
-          const outputPath = outPathFragment
+          const outputPath = outDirPathFragment
             .join('/')
             .replace(rawName, formatName)
 
           const handlePending = handle({
             rawName,
             formatName,
-            entryPath: path,
+            entryPath,
             outputPath,
             size
+          }).then((buffer: Buffer) => {
+            const newSize = buffer.length / 1000
+
+            // 日志
+            logFileGenerate.addRow([
+              ++i,
+              entryPath,
+              outputPath,
+              `${size}KB`,
+              `${newSize}KB`
+            ])
           })
 
-          // 存储 entryPath 和 outputPath , 为后续替换文件资源位置做准备
-          pathInfoList.push({ entryPath: path, outputPath })
+          // 存储 entryPath 和 outputPath , 可以为后续替换文件资源位置做准备
+          pathInfoList.push({ entryPath: entryPath, outputPath })
 
           handlePendingList.push(handlePending)
         }
@@ -103,34 +131,68 @@ async function handleImage(
 }
 
 export default async function transformImage(config: TransformImage) {
-  const { entry, outputRootDir, rules, mkdir } = config
+  const {
+    entry,
+    output,
+    rules,
+    mkdir,
+    useFile,
+    itemLog = true,
+    logFileGeneratePath
+  } = config
   const startTime = Date.now()
 
   console.log('图片任务开始')
 
   let allContent = ''
-  if (!isUndefined(entry.contentDir))
-    allContent = await getAllDirFileContent(entry.contentDir)
+  if (!isUndefined(useFile?.dir))
+    allContent = await getAllDirFileContent(useFile?.dir)
 
   const ruleNames = rules.map((v) => v.name)
-  const imagePaths = getFilePath(
-    entry.imageDir,
-    (v) =>
-      !!ruleNames.find((n) => v.endsWith(`.${n}`)) &&
-      (isUndefined(entry.contentDir) ||
-        allContent.includes(v.replaceAll(entry.imageDir, '')))
-  )
+  const imagePaths = getFilePath(entry, (filePath) => {
+    const isWellFormed = !!ruleNames.find((n) => filePath.endsWith(`.${n}`))
+
+    if (!isWellFormed) return false
+
+    let isHave = isUndefined(useFile?.dir)
+    if (!isHave) {
+      let inContentURL = filePath
+
+      // 别名
+      if (!isUndefined(useFile?.imageInFileAlias)) {
+        for (const startName in useFile.imageInFileAlias) {
+          const newStartName = useFile.imageInFileAlias[startName]
+
+          if (filePath.startsWith(startName)) {
+            inContentURL = filePath.replace(startName, newStartName)
+          }
+        }
+      }
+
+      // 存在
+      if (allContent.includes(inContentURL)) {
+        isHave = true
+      }
+    }
+
+    return isWellFormed && isHave
+  })
 
   console.log(`图片数量: ${imagePaths.length}`)
 
   const pathInfoList = await handleImage(imagePaths, {
-    outputRootDir,
+    entryRootDir: entry,
+    outputRootDir: output,
     rules,
-    mkdir
+    mkdir,
+    itemLog
   })
 
   const endTime = Date.now()
   console.log(`图片任务结束 耗时: ${(endTime - startTime) / 1000}s`)
+
+  // 生成日志
+  logFileGenerate.generate(logFileGeneratePath)
 
   return pathInfoList
 }
