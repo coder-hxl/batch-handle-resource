@@ -12,7 +12,7 @@ const LOG_FILE_PATH = 'D:/CoderHXL/性能优化/图片优化'
 
 const errorList: { path: string; message: string }[] = []
 
-function start() {
+async function start() {
   async function imageFormatWebp(entryPath: string, outputPath: string) {
     try {
       const buffer = await sharp(entryPath).toFormat('webp').toBuffer()
@@ -25,7 +25,8 @@ function start() {
     }
   }
 
-  transformImage({
+  // 图片处理
+  const pathInfoList = await transformImage({
     entry: ENTER_PATH,
     output: OUTPUT_PATH,
 
@@ -56,26 +57,26 @@ function start() {
         ]
       }
     ]
-  }).then(async (pathInfoList) => {
-    if (errorList.length) {
-      console.log(`Error: list: ${errorList} - length: ${errorList.length} `)
-    }
-
-    const replaceInfo = pathInfoList.map((item) => ({
-      searchValue: item.entryPath.replace(OUTPUT_PATH, ''),
-      replaceValue: item.outputPath.replace(OUTPUT_PATH, '')
-    }))
-
-    // 更新文件内图片资源的 URL
-    await replaceFileContent({
-      entry: FILE_ENTER_PATH,
-      list: replaceInfo,
-
-      logFileGeneratePath: LOG_FILE_PATH
-    })
-
-    console.log('完成 - 图片转换以及更新路径')
   })
+
+  if (errorList.length) {
+    console.log(`Error: list: ${errorList} - length: ${errorList.length} `)
+  }
+
+  const replaceInfo = pathInfoList.map((item) => ({
+    searchValue: item.entryPath.replace(OUTPUT_PATH, ''),
+    replaceValue: item.outputPath.replace(OUTPUT_PATH, '')
+  }))
+
+  // 更新文件内图片资源的 URL
+  await replaceFileContent({
+    entry: FILE_ENTER_PATH,
+    list: replaceInfo,
+
+    logFileGeneratePath: LOG_FILE_PATH
+  })
+
+  console.log('完成 - 图片转换以及更新路径')
 }
 
 start()

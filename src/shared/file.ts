@@ -24,6 +24,23 @@ export function getFilePath(
   return transformToPaths
 }
 
+export async function getFileContentAndPath(filePaths: string[]) {
+  const result: { path: string; content: string }[] = []
+
+  const promisePending: Promise<any>[] = []
+  for (const filePath of filePaths) {
+    const pending = fs.promises
+      .readFile(filePath, { encoding: 'utf8' })
+      .then((res) => result.push({ path: filePath, content: res }))
+
+    promisePending.push(pending)
+  }
+
+  await Promise.all(promisePending)
+
+  return result
+}
+
 export async function getAllDirFileContent(dir: string) {
   const filePaths = getFilePath(dir)
 
@@ -45,20 +62,7 @@ export async function getAllDirFileContent(dir: string) {
 }
 
 export async function getAllDirFileContentAndPath(dir: string) {
-  const result: { path: string; content: string }[] = []
-
   const filePaths = getFilePath(dir)
 
-  const promisePending: Promise<any>[] = []
-  for (const filePath of filePaths) {
-    const pending = fs.promises
-      .readFile(filePath, { encoding: 'utf8' })
-      .then((res) => result.push({ path: filePath, content: res }))
-
-    promisePending.push(pending)
-  }
-
-  await Promise.all(promisePending)
-
-  return result
+  return await getFileContentAndPath(filePaths)
 }

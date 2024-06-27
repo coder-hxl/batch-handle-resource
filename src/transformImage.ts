@@ -7,7 +7,7 @@ import {
   LogFileGenerate
 } from './shared'
 
-export interface Rule<R = 'png' | 'jpg', F = 'webp' | 'svg'> {
+export interface Rule<R = 'png' | 'jpg' | 'webp' | 'svg', F = 'webp' | 'svg'> {
   name: R
   format: {
     name: F
@@ -23,7 +23,10 @@ export interface Rule<R = 'png' | 'jpg', F = 'webp' | 'svg'> {
   }[]
 }
 
-export interface TransformImage<R = 'png' | 'jpg', F = 'webp' | 'svg'> {
+export interface TransformImage<
+  R = 'png' | 'jpg' | 'webp' | 'svg',
+  F = 'webp' | 'svg'
+> {
   entry: string
   output: string
 
