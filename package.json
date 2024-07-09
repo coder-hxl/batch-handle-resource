@@ -5,7 +5,8 @@
   "main": "src/index.ts",
   "scripts": {
     "start": "tsx src/index.ts",
-    "test": "tsx test/index.ts"
+    "test": "tsx test/index.ts",
+    "i18n-use-update": "tsx scripts/i18n-use-update.ts"
   },
   "keywords": [],
   "author": "CoderHXL",
