@@ -4,10 +4,11 @@ import { Context } from './'
 import { LogFileGenerate } from '../shared'
 
 export function filterByContent(
-  target: string
+  includes: string | string[]
 ): (context: Context) => Promise<Context> {
   return async (context: Context) => {
-    context.isFilter = !context.content.includes(target)
+    const targets = Array.isArray(includes) ? includes : [includes]
+    context.isFilter = !targets.find((item) => context.content.includes(item))
 
     return context
   }

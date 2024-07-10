@@ -7,27 +7,22 @@ import matcher, {
 } from '../src/matcher'
 
 // default: en
-const local = ['de', 'es', 'fr', 'it', 'jp', 'kr', 'pt']
+const locals = ['de', 'es', 'fr', 'it', 'jp', 'kr', 'pt']
 
-export function customInsertToLastImport(
-  insertValue: string
+function customInsertToLastImport(
+  rawImportStr: string
 ): (context: Context) => Promise<Context> {
   return async (context: Context) => {
-    const endPath = local.find((v) => context.path.includes(v)) ?? 'en'
-    insertValue += endPath
+    const pathSplit = context.path.split('/')
+    const local = locals.find((l) => pathSplit.find((p) => l === p)) ?? 'en'
+    const importStr = rawImportStr + local + "'\n"
 
-    if (!context.content.includes('import ')) {
-      context.content = insertValue + context.content
-
-      return context
-    }
-
-    const splitByImport = context.content
+    const splitContentByImport = context.content
       .split('import ')
       .splice(1)
       .map((item) => 'import ' + item)
 
-    const endChunk = splitByImport[splitByImport.length - 1]
+    const endChunk = splitContentByImport[splitContentByImport.length - 1]
 
     const regex = /['"]([^'"]+)['"]/
     const found = endChunk.match(regex)
@@ -36,54 +31,76 @@ export function customInsertToLastImport(
       const splitByModuleName = endChunk.split(moduleName)
       splitByModuleName[0] += moduleName + '\n'
 
-      splitByImport[splitByImport.length - 1] = [
+      splitContentByImport[splitContentByImport.length - 1] = [
         splitByModuleName[0],
-        insertValue,
+        importStr,
         splitByModuleName[1]
       ].join('')
     }
 
-    context.content = splitByImport.join('')
+    context.content = splitContentByImport.join('')
 
     return context
   }
 }
 
-const importStr = `
-import {
+function getReplaceImportHeader() {
+  const otherLocalImport = locals.map(
+    (local) => `src/components/${local}/Header/Header`
+  )
+
+  const replaceImportHeader = [
+    'src/components/Header/Header',
+    '../../Header/Header',
+    '../../components/Header/Header',
+    ...otherLocalImport
+  ].map((searchValue) => ({
+    searchValue,
+    replaceValue: 'src/components/i18n/header'
+  }))
+
+  return replaceImportHeader
+}
+
+const importStr = `import {
   headerDictionaries,
   headerStyles
-} from 'src/components/i18n/header/config/i18n/'\n
-`
+} from 'src/components/i18n/header/config/i18n/`
 
-const logTitle = `# page - 更新组件路径和 Props
-**import Header from "src/components/Header/Header" => import Header from "src/components/i18n/header"**
+const logTitle = `# Header 组件 - 更新组件路径和 Props
+
+**Header/Header => src/components/i18n/header**
+
+由于项目内引用路径的引号没统一，可以不采用导入语句查找，而是通过导入路径查找
+导入语句\`import Header from 'src/components/i18n/header'\`相比于导入路径会更严谨
 `
 
 matcher({
-  entry: 'e:/HXL/工具/batch-handle-resource/test/data',
+  entry: 'e:/Project/spyx-next-web/src',
   rules: [
     {
       match: /\.js$/,
       use: [
-        filterByContent('import Header from "src/components/Header/Header"'),
+        filterByContent('/Header/Header'),
         customInsertToLastImport(importStr),
         replaceContent(
           [
-            {
-              searchValue: 'import Header from "src/components/Header/Header"',
-              replaceValue: 'import Header from "src/components/i18n/header"'
-            },
+            ...getReplaceImportHeader(),
             {
               searchValue: '<Header />',
               replaceValue:
                 '<Header dictionaries={headerDictionaries} styles={headerStyles} />'
+            },
+            {
+              searchValue: '<Header/>',
+              replaceValue:
+                '<Header dictionaries={headerDictionaries} styles={headerStyles} />'
             }
           ],
-          false
+          true
         ),
         log({
-          name: 'page-更新组件路径和Props',
+          name: 'header组件-更新组件路径和Props',
           title: logTitle,
           header: ['次数', '路径'],
           storePath: 'e:/HXL/工具/batch-handle-resource/log'
