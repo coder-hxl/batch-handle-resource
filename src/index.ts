@@ -4,11 +4,11 @@ import sharp from 'sharp'
 import transformImage from './transformImage'
 import replaceFileContent from './replaceFileContent'
 
-const BASE_PATH = 'D:/CoderHXL/Project/spyx-next-web'
+const BASE_PATH = 'E:/Project/msafely-next-web'
 const ENTER_PATH = BASE_PATH + '/public'
 const OUTPUT_PATH = BASE_PATH + '/public'
 const FILE_ENTER_PATH = BASE_PATH + '/src'
-const LOG_FILE_PATH = 'D:/CoderHXL/性能优化/图片优化'
+const LOG_FILE_PATH = 'E:/log'
 
 const errorList: { path: string; message: string }[] = []
 

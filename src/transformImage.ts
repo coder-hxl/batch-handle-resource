@@ -103,18 +103,22 @@ async function handleImage(
             entryPath,
             outputPath,
             size
-          }).then((buffer: Buffer) => {
-            const newSize = buffer.length / 1000
-
-            // 日志
-            logFileGenerate.addRow([
-              ++i,
-              entryPath,
-              outputPath,
-              `${size}KB`,
-              `${newSize}KB`
-            ])
           })
+            .then((buffer: Buffer) => {
+              const newSize = buffer.length / 1000
+
+              // 日志
+              logFileGenerate.addRow([
+                ++i,
+                entryPath,
+                outputPath,
+                `${size}KB`,
+                `${newSize}KB`
+              ])
+            })
+            .catch(() => {
+              console.log('Err: ', entryPath, outputPath)
+            })
 
           // 存储 entryPath 和 outputPath , 可以为后续替换文件资源位置做准备
           pathInfoList.push({ entryPath: entryPath, outputPath })

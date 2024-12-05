@@ -14,8 +14,7 @@
   "description": "",
   "dependencies": {
     "batch-handle-resource": "link:",
-    "sharp": "^0.33.4",
-    "x-crawl": "^10.0.1"
+    "sharp": "^0.33.4"
   },
   "devDependencies": {
     "@types/node": "^20.14.8",
